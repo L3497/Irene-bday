@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Birthday Yarn Shop</title>
+<style>
+  :root { --bg:#fbf1e6; --ink:#4a2f3a; --accent:#d9546e; --wood:#c98f5f; --wood-dark:#9c6a42; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; background:var(--bg); color:var(--ink);
+    font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif; user-select:none; -webkit-tap-highlight-color:transparent; }
+  .app { max-width:520px; margin:0 auto; padding:16px; }
+  header { text-align:center; margin-bottom:10px; }
+  .sign { display:inline-block; background:var(--accent); color:#fff; padding:8px 20px; border-radius:12px;
+    font-size:22px; font-weight:bold; box-shadow:0 4px 0 #a83a52; letter-spacing:1px; }
+  .hint { margin:12px 0 4px; font-size:15px; }
+  .shelf { background:#fff8f0; border-radius:16px; padding:12px 10px 0; box-shadow:0 6px 18px rgba(74,47,58,.12); }
+  .row { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding-bottom:6px;
+    border-bottom:10px solid var(--wood); border-radius:0 0 4px 4px; margin-bottom:14px;
+    box-shadow:0 4px 0 var(--wood-dark); }
+  .yarn { background:none; border:none; padding:4px 0; cursor:pointer; font-family:inherit; color:var(--ink);
+    display:flex; flex-direction:column; align-items:center; transition:transform .15s; }
+  .yarn { touch-action:none; }
+  .ghost { position:fixed; z-index:50; pointer-events:none; width:70px; height:70px;
+    filter:drop-shadow(0 8px 6px rgba(0,0,0,.25)); transform:rotate(-8deg); }
+  .basket.over .body { filter:brightness(1.18); transform:scale(1.04); }
+  .basket .body { transition:transform .15s, filter .15s; }
+  .yarn:hover { transform:translateY(-4px) rotate(-4deg); }
+  .yarn svg { width:62px; height:62px; filter:drop-shadow(0 3px 2px rgba(0,0,0,.15)); }
+  .yarn span { font-size:11px; line-height:1.2; margin-top:2px; text-align:center; min-height:26px; }
+  .yarn.taken { opacity:.25; pointer-events:none; }
+  .basket-area { margin-top:6px; text-align:center; }
+  .basket { position:relative; width:230px; height:110px; margin:0 auto; }
+  .basket .slots { position:absolute; left:20px; right:20px; top:6px; display:flex; justify-content:center; gap:2px; }
+  .basket .slots svg { width:46px; height:46px; animation:drop .35s ease-out; }
+  @keyframes drop { from { transform:translateY(-30px) scale(.6); opacity:0 } to { transform:none; opacity:1 } }
+  .basket .body { position:absolute; left:0; right:0; bottom:0; height:62px; border-radius:6px 6px 40px 40px;
+    background:repeating-linear-gradient(90deg,#c98f5f 0 12px,#b47b4d 12px 24px); border:3px solid var(--wood-dark); }
+  .basket .body::before { content:""; position:absolute; inset:16px 0 auto; height:6px; background:var(--wood-dark); opacity:.5; }
+  .count { font-weight:bold; margin:8px 0 0; font-size:16px; }
+  button.main { margin-top:12px; background:var(--accent); color:#fff; border:none; border-radius:999px;
+    padding:12px 28px; font-size:17px; font-weight:bold; cursor:pointer; font-family:inherit; box-shadow:0 4px 0 #a83a52; }
+  button.main:active { transform:translateY(3px); box-shadow:0 1px 0 #a83a52; }
+  button.main:disabled { opacity:.4; cursor:default; }
+  .flyer { position:fixed; z-index:50; pointer-events:none; width:62px; height:62px;
+    transition:transform .55s cubic-bezier(.5,-0.3,.7,1), opacity .55s; }
+  .overlay { position:fixed; inset:0; background:rgba(74,47,58,.35); display:flex; align-items:center;
+    justify-content:center; padding:16px; z-index:60; overflow-y:auto; }
+  .hidden { display:none; }
+  .receipt { background:#fff; width:100%; max-width:300px; padding:20px 18px 24px; font-family:"Courier New",monospace;
+    font-size:14px; box-shadow:0 12px 40px rgba(0,0,0,.25); animation:print .5s ease-out;
+    -webkit-mask:radial-gradient(circle 6px at 50% 100%, transparent 98%, #000) 0 0/14px 100% repeat-x; }
+  @keyframes print { from { transform:translateY(-40px); opacity:0 } to { transform:none; opacity:1 } }
+  .receipt h2 { text-align:center; margin:0 0 4px; font-size:18px; }
+  .receipt .c { text-align:center; font-size:12px; margin:0 0 10px; }
+  .line { display:flex; justify-content:space-between; gap:8px; padding:2px 0; }
+  .dash { border-top:1px dashed #999; margin:8px 0; }
+  .total { font-weight:bold; font-size:16px; }
+  .panel { background:#fff; border-radius:22px; padding:24px 20px; max-width:340px; width:100%; text-align:center;
+    box-shadow:0 12px 40px rgba(74,47,58,.25); animation:pop .4s ease-out; }
+  @keyframes pop { from { transform:scale(.8); opacity:0 } to { transform:none; opacity:1 } }
+  .panel h1 { margin:0 0 8px; font-size:24px; color:var(--accent); }
+  .voucher { margin:14px 0 8px; border:3px dashed var(--accent); border-radius:16px; padding:14px 10px;
+    background:repeating-linear-gradient(45deg,#fff6f8 0 10px,#fdeef1 10px 20px); }
+  .voucher .label { letter-spacing:4px; font-size:13px; font-weight:bold; color:var(--accent); }
+  .voucher .amount { font-size:38px; font-weight:bold; margin:4px 0; }
+  .voucher .shop { font-size:18px; font-weight:bold; }
+  .confetti { position:fixed; top:-12px; width:9px; height:5px; z-index:70; pointer-events:none;
+    animation:fall linear forwards; }
+  @keyframes fall { to { transform:translateY(110vh) rotate(720deg); } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="sign">🧶 The Birthday Yarn Shop</div>
+    <p class="hint" id="hint"></p>
+  </header>
+
+  <div class="shelf" id="shelf"></div>
+
+  <div class="basket-area">
+    <div class="basket"><div class="slots" id="slots"></div><div class="body"></div></div>
+    <p class="count" id="count"></p>
+    <button class="main" id="checkout" disabled>Done! 🎁</button>
+  </div>
+</div>
+
+<div id="startOv" class="overlay" style="background:var(--bg)">
+  <div class="panel">
+    <div style="font-size:64px;line-height:1">🧶</div>
+    <h1 id="startTitle" style="font-size:28px"></h1>
+    <p style="font-style:italic;font-size:17px;color:var(--accent);margin:4px 0 14px">“Birthdays are like knitting: the more, the better.”</p>
+    <p>A little surprise is waiting for you in <strong>The Birthday Yarn Shop</strong>.</p>
+    <p>Pick your favourite yarns and see what happens…</p>
+    <button class="main" id="startBtn">Start shopping 🛍️</button>
+  </div>
+</div>
+
+<div id="winOv" class="overlay hidden">
+  <div class="panel">
+    <h1 id="winTitle"></h1>
+    <p>Great choice! Here's what your yarn could become:</p>
+    <div id="sweater" style="width:190px;margin:4px auto 0"></div>
+    <p>Ready to knit it for real? You get a</p>
+    <div class="voucher">
+      <div class="label">GIFT VOUCHER</div>
+      <div class="amount" id="vAmount"></div>
+      <div class="shop" id="vShop"></div>
+    </div>
+    <p id="greeting"></p>
+    <button class="main" id="again">Shop again</button>
+  </div>
+</div>
+
+<script>
+/* ========= EDIT HERE ========= */
+const CONFIG = {
+  name:     "Irene",                         // colleague's name
+  amount:   "",                              // voucher amount (leave "" to hide)
+  shop:     "for Maschenfein.de",            // shop line on the voucher
+  greeting: "Belated birthday wishes from all of us! 💐"
+};
+/* ============================= */
+
+const PICK = 4;
+const YARNS = [
+  { name:"Cloud Dancer",     c:"#f0ede6", s:"#c4bcae" },
+  { name:"Oatmeal",          c:"#d8c3a5", s:"#a58e6c" },
+  { name:"Chocolate",       c:"#6b4532", s:"#462b1e" },
+  { name:"Cinnamon",         c:"#b8653a", s:"#874525" },
+  { name:"Dusty Rose",       c:"#b86f72", s:"#8a4c50" },
+  { name:"Forest Moss",      c:"#5e7048", s:"#3e4c2e" },
+  { name:"Denim",            c:"#5b7a99", s:"#3d566f" },
+  { name:"Smoky Plum",       c:"#7d5470", s:"#56394d" },
+  { name:"Peach Sorbet",     c:"#f2b8a0", s:"#c48a72" }
+];
+
+function yarnSVG(y) {
+  return `<svg viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="28" fill="${y.c}" stroke="${y.s}" stroke-width="2"/>
+    <g fill="none" stroke="${y.s}" stroke-width="2" stroke-linecap="round" opacity=".7">
+      <path d="M10 22 Q32 34 52 14"/><path d="M6 34 Q32 44 58 24"/><path d="M10 46 Q34 52 56 38"/>
+      <path d="M22 6 Q30 32 20 58"/><path d="M38 5 Q46 32 40 60"/>
+    </g>
+    <path d="M56 40 Q64 50 58 60" fill="none" stroke="${y.c}" stroke-width="3" stroke-linecap="round"/>
+  </svg>`;
+}
+
+const $ = id => document.getElementById(id);
+let basket = [];
+
+function render() {
+  const shelf = $('shelf');
+  shelf.innerHTML = '';
+  for (let r = 0; r < 3; r++) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    YARNS.slice(r * 3, r * 3 + 3).forEach(y => {
+      const b = document.createElement('button');
+      b.className = 'yarn';
+      b.innerHTML = yarnSVG(y) + `<span>${y.name}</span>`;
+      b.addEventListener('pointerdown', e => startDrag(e, y, b));
+      row.appendChild(b);
+    });
+    shelf.appendChild(row);
+  }
+  $('hint').innerHTML = `Hi ${CONFIG.name}! Here's your belated birthday shopping spree. <strong>Pick ${PICK} yarns</strong> you love: tap them or drag them into your basket.`;
+  update();
+}
+
+function update() {
+  const left = PICK - basket.length;
+  $('count').textContent = left > 0 ? `${basket.length} / ${PICK} in your basket` : 'Basket full! 🎉';
+  $('checkout').disabled = left > 0;
+}
+
+function addSlot(y) {
+  const s = document.createElement('span');
+  s.innerHTML = yarnSVG(y);
+  $('slots').appendChild(s.firstChild);
+  update();
+}
+
+/* tap OR drag */
+let drag = null;
+function startDrag(e, y, btn) {
+  if (basket.length >= PICK) return;
+  e.preventDefault();
+  drag = { y, btn, sx: e.clientX, sy: e.clientY, ghost: null };
+}
+function overBasket(x, y) {
+  const r = document.querySelector('.basket').getBoundingClientRect();
+  return x > r.left - 30 && x < r.right + 30 && y > r.top - 40 && y < r.bottom + 20;
+}
+addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (!drag.ghost && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 8) {
+    drag.ghost = document.createElement('div');
+    drag.ghost.className = 'ghost';
+    drag.ghost.innerHTML = yarnSVG(drag.y);
+    document.body.appendChild(drag.ghost);
+    drag.btn.style.opacity = '.3';
+  }
+  if (drag.ghost) {
+    drag.ghost.style.left = e.clientX - 35 + 'px';
+    drag.ghost.style.top = e.clientY - 35 + 'px';
+    document.querySelector('.basket').classList.toggle('over', overBasket(e.clientX, e.clientY));
+  }
+});
+addEventListener('pointerup', e => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  document.querySelector('.basket').classList.remove('over');
+  if (!d.ghost) { pick(d.y, d.btn); return; }       // simple tap
+  d.ghost.remove();
+  d.btn.style.opacity = '';
+  if (overBasket(e.clientX, e.clientY) && basket.length < PICK) {
+    basket.push(d.y);
+    d.btn.classList.add('taken');
+    addSlot(d.y);
+  }
+});
+addEventListener('pointercancel', () => {
+  if (drag && drag.ghost) { drag.ghost.remove(); drag.btn.style.opacity = ''; }
+  drag = null;
+});
+
+function pick(y, btn) {
+  if (basket.length >= PICK) return;
+  basket.push(y);
+  btn.classList.add('taken');
+  // fly animation
+  const from = btn.querySelector('svg').getBoundingClientRect();
+  const to = $('slots').getBoundingClientRect();
+  const f = document.createElement('div');
+  f.className = 'flyer';
+  f.innerHTML = yarnSVG(y);
+  f.style.left = from.left + 'px';
+  f.style.top = from.top + 'px';
+  document.body.appendChild(f);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    f.style.transform = `translate(${to.left + to.width / 2 - from.left - 31}px, ${to.top - from.top}px) scale(.7)`;
+    f.style.opacity = '.3';
+  }));
+  setTimeout(() => {
+    f.remove();
+    addSlot(y);
+  }, 550);
+}
+
+function sweaterSVG(cols) {
+  const body = 'M72 12 Q100 34 128 12 L168 26 L196 98 L170 110 L154 74 L154 172 L46 172 L46 74 L30 110 L4 98 L32 26 Z';
+  const band = 160 / cols.length;
+  const stripes = cols.map((y, i) =>
+    `<rect x="0" y="${12 + i * band}" width="200" height="${band + 1}" fill="${y.c}"/>`).join('');
+  return `<svg viewBox="0 0 200 180" style="width:100%;display:block;animation:pop .5s ease-out">
+    <defs>
+      <clipPath id="sw"><path d="${body}"/></clipPath>
+      <pattern id="knit" width="8" height="8" patternUnits="userSpaceOnUse">
+        <path d="M1 1 L4 6 L7 1" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="1.2"/>
+      </pattern>
+      <pattern id="rib" width="5" height="10" patternUnits="userSpaceOnUse">
+        <rect width="2.5" height="10" fill="rgba(0,0,0,.2)"/>
+      </pattern>
+    </defs>
+    <g clip-path="url(#sw)">
+      ${stripes}
+      <rect width="200" height="180" fill="url(#knit)"/>
+      <rect x="40" y="158" width="120" height="16" fill="url(#rib)"/>
+      <rect x="0" y="94" width="40" height="20" fill="url(#rib)" transform="rotate(-24 20 104)"/>
+      <rect x="160" y="94" width="40" height="20" fill="url(#rib)" transform="rotate(24 180 104)"/>
+    </g>
+    <path d="M72 12 Q100 34 128 12" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="6"/>
+    <path d="${body}" fill="none" stroke="#4a2f3a" stroke-width="2.5" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+$('checkout').onclick = () => {
+  $('sweater').innerHTML = sweaterSVG(basket);
+  $('winTitle').textContent = `🎉 Happy Belated Birthday, ${CONFIG.name}!`;
+  $('vAmount').textContent = CONFIG.amount;
+  $('vAmount').style.display = CONFIG.amount ? '' : 'none';
+  if (!CONFIG.amount) $('vShop').style.cssText = 'font-size:24px;margin:8px 0 2px';
+  $('vShop').textContent = CONFIG.shop;
+  $('greeting').textContent = CONFIG.greeting;
+  $('winOv').classList.remove('hidden');
+  confetti();
+};
+
+$('again').onclick = () => {
+  basket = [];
+  $('slots').innerHTML = '';
+  $('winOv').classList.add('hidden');
+  render();
+};
+
+function confetti() {
+  const cols = ['#d9546e', '#f2a65a', '#7fb8a4', '#8d7ad9', '#f7d154', '#5aa9c9'];
+  for (let i = 0; i < 90; i++) {
+    const d = document.createElement('div');
+    d.className = 'confetti';
+    d.style.left = Math.random() * 100 + 'vw';
+    d.style.background = cols[i % cols.length];
+    d.style.animationDuration = 2 + Math.random() * 2.5 + 's';
+    d.style.animationDelay = Math.random() * 0.8 + 's';
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 5500);
+  }
+}
+
+$('startTitle').textContent = `Happy Belated Birthday, ${CONFIG.name}!`;
+$('startBtn').onclick = () => $('startOv').classList.add('hidden');
+
+render();
+</script>
+</body>
+</html>
